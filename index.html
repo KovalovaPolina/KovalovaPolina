@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <title>Minesweeper UI</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div class="game-container">
+
+    <!-- ХЕДЕР -->
+    <div class="header">
+        <div class="counter flags">🚩 10</div>
+        <button class="reset-btn">🙂</button>
+        <div class="counter timer">000</div>
+    </div>
+
+    <!-- ПОЛЕ ГРИ -->
+    <div class="board">
+        <!-- 100 клітинок (10x10) -->
+        <!-- Для демонстрації різних станів включено кілька прикладів -->
+        <div class="cell closed"></div>
+        <div class="cell open num1">1</div>
+        <div class="cell open num2">2</div>
+        <div class="cell open num3">3</div>
+        <div class="cell flag"></div>
+        <div class="cell flag-wrong"></div>
+        <div class="cell mine"></div>
+        <div class="cell mine-red"></div>
+
+        <!-- решта закриті -->
+        <!-- (додаємо довільні, щоб заповнити 100 клітинок) -->
+        <!-- У реальній роботі JS створюватиме ці клітинки -->
+        <!-- Тут просто дублюємо -->
+        <script>
+            for (let i = 0; i < 92; i++) {
+                document.write('<div class="cell closed"></div>');
+            }
+        </script>
+    </div>
+</div>
+
+</body>
+</html>

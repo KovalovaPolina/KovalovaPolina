@@ -1,0 +1,107 @@
+body {
+    background: #e0e0e0;
+    display: flex;
+    justify-content: center;
+    padding-top: 40px;
+    font-family: Arial, sans-serif;
+}
+
+.game-container {
+    background: #c0c0c0;
+    padding: 15px;
+    border: 4px solid #fff;
+    box-shadow: inset -2px -2px 5px #666, inset 2px 2px 5px #fff;
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px;
+    background: #b0b0b0;
+    border: 3px solid #fff;
+    margin-bottom: 15px;
+}
+
+.counter {
+    width: 60px;
+    height: 40px;
+    background: black;
+    color: red;
+    font-size: 32px;
+    text-align: center;
+    line-height: 40px;
+    font-family: "Digital", monospace;
+}
+
+.reset-btn {
+    width: 50px;
+    height: 50px;
+    font-size: 28px;
+    cursor: pointer;
+    border: 3px solid #fff;
+    background: #d0d0d0;
+    box-shadow: inset -2px -2px 5px #777, inset 2px 2px 5px #fff;
+}
+
+.board {
+    display: grid;
+    grid-template-columns: repeat(10, 32px);
+    grid-template-rows: repeat(10, 32px);
+    gap: 2px;
+}
+
+.cell {
+    width: 32px;
+    height: 32px;
+    font-size: 20px;
+    text-align: center;
+    line-height: 32px;
+    font-weight: bold;
+    user-select: none;
+}
+
+/* СТАНИ КЛІТИН */
+.closed {
+    background: #b0b0b0;
+    border: 3px solid #fff;
+    box-shadow: inset -2px -2px 5px #666;
+    cursor: pointer;
+}
+
+.open {
+    background: #e6e6e6;
+    border: 2px solid #999;
+}
+
+/* ЦИФРИ */
+.num1 { color: blue; }
+.num2 { color: green; }
+.num3 { color: red; }
+.num4 { color: darkblue; }
+.num5 { color: brown; }
+.num6 { color: turquoise; }
+.num7 { color: black; }
+.num8 { color: gray; }
+
+/* ПРАПОРЕЦЬ */
+.flag {
+    background: #b0b0b0 url('https://i.imgur.com/wXq2s2x.png') center/22px no-repeat;
+}
+
+/* НЕПРАВИЛЬНИЙ ПРАПОРЕЦЬ */
+.flag-wrong {
+    background: #e6e6e6 url('https://i.imgur.com/kYjUKaS.png') center/22px no-repeat;
+    border: 2px solid #999;
+}
+
+/* МІНА */
+.mine {
+    background: #e6e6e6 url('https://i.imgur.com/RW5W5Sg.png') center/22px no-repeat;
+    border: 2px solid #999;
+}
+
+/* МІНА, НА ЯКУ НАТИСНУЛИ */
+.mine-red {
+    background: red url('https://i.imgur.com/RW5W5Sg.png') center/22px no-repeat;
+    border: 2px solid #900;
+}
