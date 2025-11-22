@@ -1,62 +1,63 @@
-// ===============================
-//  Стани клітинок
-// ===============================
-const CELL_STATE = {
-    CLOSED: "closed",
-    OPENED: "opened",
-    FLAGGED: "flagged"
+// =======================
+// СТАН ГРИ
+// =======================
+const game = {
+    rows: 0,
+    cols: 0,
+    mines: 0,
+    field: [],
+    isGameOver: false,
+    status: "in_progress", // in_progress | win | lose
+    timer: null,
+    seconds: 0
 };
 
-// ===============================
-//  Стани гри
-// ===============================
-const GAME_STATE = {
-    PLAYING: "playing",
-    WON: "won",
-    LOST: "lost"
-};
+// =======================
+// ТАЙМЕР
+// =======================
+function startTimer() {
+    if (game.timer) return;
 
-// ===============================
-//  Структура гри
-// ===============================
-let game = {
-    rows: 8,
-    cols: 8,
-    mines: 10,
-    state: GAME_STATE.PLAYING,
-    field: []
-};
-
-// ===============================
-//  Створення пустого поля
-// ===============================
-function createEmptyField(rows, cols) {
-    const field = [];
-
-    for (let r = 0; r < rows; r++) {
-        const row = [];
-        for (let c = 0; c < cols; c++) {
-            row.push({
-                hasMine: false,
-                adjacentMines: 0,
-                state: CELL_STATE.CLOSED
-            });
-        }
-        field.push(row);
-    }
-
-    return field;
+    game.timer = setInterval(() => {
+        game.seconds++;
+        console.log("Секунди:", game.seconds);
+    }, 1000);
 }
 
-// ===============================
-//  Розставлення мін
-// ===============================
-function placeMines(field, minesCount) {
-    const rows = field.length;
-    const cols = field[0].length;
-    let placed = 0;
+function stopTimer() {
+    clearInterval(game.timer);
+    game.timer = null;
+    console.log("Таймер зупинено. Загальний час:", game.seconds);
+}
 
-    while (placed < minesCount) {
+// =======================
+// ГЕНЕРАЦІЯ ПОЛЯ
+// =======================
+function generateField(rows, cols, mines) {
+    game.rows = rows;
+    game.cols = cols;
+    game.mines = mines;
+    game.seconds = 0;
+    game.status = "in_progress";
+    game.isGameOver = false;
+
+    // Створюємо порожнє поле
+    const field = [];
+    for (let r = 0; r < rows; r++) {
+        field[r] = [];
+        for (let c = 0; c < cols; c++) {
+            field[r][c] = {
+                hasMine: false,
+                neighbourMines: 0,
+                isOpen: false,
+                isFlagged: false
+            };
+        }
+    }
+
+    // Розставляємо міни
+    let placed = 0;
+    while (placed < mines) {
         const r = Math.floor(Math.random() * rows);
         const c = Math.floor(Math.random() * cols);
 
@@ -65,67 +66,112 @@ function placeMines(field, minesCount) {
             placed++;
         }
     }
+
+    // Підрахунок сусідніх мін
+    for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+            field[r][c].neighbourMines = countNeighbourMines(field, r, c);
+        }
+    }
+
+    game.field = field;
+    startTimer();
+    console.log("Поле згенеровано:");
+    console.table(field);
+    return field;
 }
 
-// ===============================
-//  Підрахунок сусідніх мін
-// ===============================
-function countAdjacentMines(field) {
+// =======================
+// ПІДРАХУНОК СУСІДНІХ МІН
+// =======================
+function countNeighbourMines(field, row, col) {
     const dirs = [
         [-1, -1], [-1, 0], [-1, 1],
-        [0, -1],           [0, 1],
-        [1, -1],  [1, 0],  [1, 1]
+        [0, -1],          [0, 1],
+        [1, -1], [1, 0],  [1, 1]
     ];
 
-    for (let r = 0; r < field.length; r++) {
-        for (let c = 0; c < field[0].length; c++) {
+    let count = 0;
 
-            let count = 0;
+    for (const [dr, dc] of dirs) {
+        const r = row + dr;
+        const c = col + dc;
 
-            dirs.forEach(([dr, dc]) => {
-                const nr = r + dr;
-                const nc = c + dc;
+        if (r >= 0 && r < game.rows && c >= 0 && c < game.cols) {
+            if (field[r][c].hasMine) count++;
+        }
+    }
 
-                if (nr >= 0 && nr < field.length && nc >= 0 && nc < field[0].length) {
-                    if (field[nr][nc].hasMine) count++;
+    return count;
+}
+
+// =======================
+// ВІДКРИТТЯ КЛІТИНКИ
+// =======================
+function openCell(row, col) {
+    if (game.isGameOver) return;
+    const cell = game.field[row][col];
+
+    if (cell.isOpen || cell.isFlagged) return;
+
+    cell.isOpen = true;
+
+    if (cell.hasMine) {
+        game.status = "lose";
+        game.isGameOver = true;
+        stopTimer();
+        console.log("💥 Ви підірвалися! Програш.");
+        return;
+    }
+
+    // Якщо 0 — відкриваємо сусідів
+    if (cell.neighbourMines === 0) {
+        const dirs = [
+            [-1, -1], [-1, 0], [-1, 1],
+            [0, -1],          [0, 1],
+            [1, -1], [1, 0],  [1, 1]
+        ];
+
+        for (const [dr, dc] of dirs) {
+            const r = row + dr;
+            const c = col + dc;
+
+            if (r >= 0 && r < game.rows && c >= 0 && c < game.cols) {
+                if (!game.field[r][c].isOpen) {
+                    openCell(r, c);
                 }
-            });
-
-            field[r][c].adjacentMines = count;
+            }
         }
     }
+
+    console.table(game.field);
 }
 
-// ===============================
-//  Створення HTML-поля
-// ===============================
-function renderBoard() {
-    const board = document.getElementById("gameBoard");
-    board.innerHTML = "";
+// =======================
+// ПРАПОРЕЦЬ
+// =======================
+function toggleFlag(row, col) {
+    if (game.isGameOver) return;
 
-    for (let r = 0; r < game.rows; r++) {
-        for (let c = 0; c < game.cols; c++) {
-            const cell = document.createElement("div");
-            cell.classList.add("cell");
-            cell.dataset.r = r;
-            cell.dataset.c = c;
+    const cell = game.field[row][col];
+    if (cell.isOpen) return;
 
-            board.appendChild(cell);
-        }
-    }
+    cell.isFlagged = !cell.isFlagged;
+
+    console.log(`Прапорець ${cell.isFlagged ? "поставлено" : "знято"} на (${row}, ${col})`);
+    console.table(game.field);
 }
 
-// ===============================
-//  Ініціалізація гри
-// ===============================
-function initGame() {
-    game.field = createEmptyField(game.rows, game.cols);
-    placeMines(game.field, game.mines);
-    countAdjacentMines(game.field);
+// ===================================================
+// ============= ТЕСТОВІ ВИКЛИКИ =====================
+// ===================================================
 
-    console.log("Ігрове поле:", game.field);
+console.log("=== Старт гри ===");
+generateField(5, 5, 5);
 
-    renderBoard();
-}
+// Перевірка окремих функцій
+console.log("Міни навколо (2,2):", countNeighbourMines(game.field, 2, 2));
 
-initGame();
+toggleFlag(1, 1);
+openCell(2, 2);
+openCell(0, 0);
