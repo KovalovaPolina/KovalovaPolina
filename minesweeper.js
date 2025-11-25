@@ -1,78 +1,204 @@
-// ================================
-// 1. Структура клітинки
-// ================================
-function createCell(hasMine = false, neighborMines = 0, state = "closed") {
-    return {
-        hasMine,          // булеве значення (true/false)
-        neighborMines,    // кількість сусідніх мін
-        state             // "closed", "open", "flagged"
-    };
-}
+// --- Налаштування гри ---
+const ROWS = 8;
+const COLS = 8;
+const MINES = 10;
 
-// ================================
-// 2. Структура ігрового поля
-// ================================
-function createEmptyBoard(rows, cols) {
-    const board = [];
-    for (let r = 0; r < rows; r++) {
-        const row = [];
-        for (let c = 0; c < cols; c++) {
-            row.push(createCell());
+let board = [];
+let revealedCount = 0;
+let flagsLeft = MINES;
+let timer = 0;
+let timerInterval = null;
+let gameOver = false;
+
+const gameBoard = document.getElementById('gameBoard');
+const timerEl = document.getElementById('timer');
+const flagsCountEl = document.getElementById('flagsCount');
+const restartBtn = document.getElementById('restartBtn');
+
+// --- Генерація поля ---
+function initBoard() {
+    board = Array.from({ length: ROWS }, () =>
+        Array.from({ length: COLS }, () => ({ mine: false, revealed: false, flagged: false, count: 0 }))
+    );
+
+    // Встановлення мін
+    let minesPlaced = 0;
+    while (minesPlaced < MINES) {
+        let r = Math.floor(Math.random() * ROWS);
+        let c = Math.floor(Math.random() * COLS);
+        if (!board[r][c].mine) {
+            board[r][c].mine = true;
+            minesPlaced++;
         }
-        board.push(row);
     }
-    return board;
+
+    // Обчислення сусідів
+    for (let r = 0; r < ROWS; r++) {
+        for (let c = 0; c < COLS; c++) {
+            if (!board[r][c].mine) {
+                board[r][c].count = countMines(r, c);
+            }
+        }
+    }
+
+    revealedCount = 0;
+    flagsLeft = MINES;
+    flagsCountEl.textContent = flagsLeft;
+    timer = 0;
+    timerEl.textContent = timer;
+    gameOver = false;
+
+    renderBoard();
 }
 
-// ================================
-// 3. Структура стану гри
-// ================================
-function createGameState(rows, cols, mines) {
-    return {
-        rows,               // розмірність
-        cols,
-        mineCount: mines,   // кількість мін
-        status: "inProgress", // можливі значення: "inProgress", "won", "lost"
-        board: createEmptyBoard(rows, cols)
-    };
+// --- Підрахунок сусідніх мін ---
+function countMines(r, c) {
+    let count = 0;
+    for (let i = r - 1; i <= r + 1; i++) {
+        for (let j = c - 1; j <= c + 1; j++) {
+            if (i >= 0 && i < ROWS && j >= 0 && j < COLS && board[i][j].mine) {
+                count++;
+            }
+        }
+    }
+    return count;
 }
 
-// ================================
-// 4. Тестове ігрове поле (приклад)
-// ================================
-const testBoard = [
-    [
-        createCell(false, 1, "closed"),
-        createCell(true,  0, "closed"),
-        createCell(false, 1, "closed")
-    ],
-    [
-        createCell(false, 1, "closed"),
-        createCell(false, 2, "closed"),
-        createCell(true,  0, "closed")
-    ],
-    [
-        createCell(false, 0, "closed"),
-        createCell(false, 1, "closed"),
-        createCell(false, 1, "closed")
-    ]
-];
+// --- Рендеринг поля ---
+function renderBoard() {
+    gameBoard.innerHTML = '';
+    gameBoard.style.gridTemplateRows = `repeat(${ROWS}, 30px)`;
+    gameBoard.style.gridTemplateColumns = `repeat(${COLS}, 30px)`;
 
-const testGame = {
-    rows: 3,
-    cols: 3,
-    mineCount: 2,
-    status: "inProgress",
-    board: testBoard
-};
+    for (let r = 0; r < ROWS; r++) {
+        for (let c = 0; c < COLS; c++) {
+            const cellEl = document.createElement('div');
+            cellEl.classList.add('cell');
+            cellEl.dataset.row = r;
+            cellEl.dataset.col = c;
 
-// ================================
-// Виведення результату
-// ================================
-console.log("Тестовий стан гри:");
-console.log(testGame);
+            const cell = board[r][c];
 
-console.log("Відображення поля:");
-testGame.board.forEach(row => {
-    console.log(row.map(cell => cell.hasMine ? "💣" : cell.neighborMines).join(" "));
+            if (cell.revealed) {
+                cellEl.classList.add('revealed');
+                if (cell.mine) {
+                    cellEl.textContent = '💣';
+                    cellEl.classList.add('mine');
+                } else if (cell.count > 0) {
+                    cellEl.textContent = cell.count;
+                    cellEl.dataset.count = cell.count; // для кольору цифр
+                }
+            } else if (cell.flagged) {
+                cellEl.classList.add('flagged');
+                cellEl.textContent = '🚩';
+            }
+
+            gameBoard.appendChild(cellEl);
+        }
+    }
+}
+
+// --- Обробка кліків ---
+gameBoard.addEventListener('click', (e) => {
+    if (gameOver) return;
+    const cell = e.target;
+    const r = +cell.dataset.row;
+    const c = +cell.dataset.col;
+    if (!board[r][c].revealed && !board[r][c].flagged) {
+        revealCell(r, c);
+        checkWin();
+    }
 });
+
+gameBoard.addEventListener('contextmenu', (e) => {
+    e.preventDefault();
+    if (gameOver) return;
+    const cell = e.target;
+    const r = +cell.dataset.row;
+    const c = +cell.dataset.col;
+    toggleFlag(r, c);
+});
+
+// --- Відкриття клітинки ---
+function revealCell(r, c) {
+    const cell = board[r][c];
+    if (cell.revealed || cell.flagged) return;
+    cell.revealed = true;
+    revealedCount++;
+
+    if (cell.mine) {
+        gameOver = true;
+        clearInterval(timerInterval);
+        revealAllMines();
+        alert('💥 Ви програли!');
+        restartBtn.textContent = '😵';
+    } else if (cell.count === 0) {
+        // Рекурсивне відкриття порожніх клітинок
+        for (let i = r - 1; i <= r + 1; i++) {
+            for (let j = c - 1; j <= c + 1; j++) {
+                if (i >= 0 && i < ROWS && j >= 0 && j < COLS) {
+                    revealCell(i, j);
+                }
+            }
+        }
+    }
+
+    renderBoard();
+}
+
+// --- Встановлення/зняття прапорця ---
+function toggleFlag(r, c) {
+    const cell = board[r][c];
+    if (cell.revealed) return;
+    if (cell.flagged) {
+        cell.flagged = false;
+        flagsLeft++;
+    } else if (flagsLeft > 0) {
+        cell.flagged = true;
+        flagsLeft--;
+    }
+    flagsCountEl.textContent = flagsLeft;
+    renderBoard();
+}
+
+// --- Перевірка виграшу ---
+function checkWin() {
+    if (revealedCount === ROWS * COLS - MINES) {
+        gameOver = true;
+        clearInterval(timerInterval);
+        alert('🏆 Ви виграли!');
+        restartBtn.textContent = '😎';
+    }
+}
+
+// --- Відкриття всіх мін після поразки ---
+function revealAllMines() {
+    for (let r = 0; r < ROWS; r++) {
+        for (let c = 0; c < COLS; c++) {
+            if (board[r][c].mine) {
+                board[r][c].revealed = true;
+            }
+        }
+    }
+    renderBoard();
+}
+
+// --- Таймер ---
+function startTimer() {
+    clearInterval(timerInterval);
+    timerInterval = setInterval(() => {
+        timer++;
+        timerEl.textContent = timer;
+    }, 1000);
+}
+
+// --- Кнопка рестарту ---
+restartBtn.addEventListener('click', () => {
+    initBoard();
+    startTimer();
+    restartBtn.textContent = '🙂';
+});
+
+// --- Старт гри при завантаженні ---
+initBoard();
+startTimer();

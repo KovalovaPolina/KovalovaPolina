@@ -2,12 +2,22 @@
 <html lang="uk">
 <head>
     <meta charset="UTF-8">
-    <title>Minesweeper Logic</title>
+    <title>Minesweeper</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <h1>Minesweeper – Логіка гри (Лабораторна)</h1>
-    <p>Відкрийте F12 → Console, щоб побачити роботу функцій.</p>
+    <h1>Minesweeper</h1>
 
-    <script src="script.js"></script>
+    <div class="controls">
+        <button id="restartBtn">🙂</button>
+        <div class="info">
+            <span>Час: <span id="timer">0</span> с</span>
+            <span>Флаги: <span id="flagsCount">0</span></span>
+        </div>
+    </div>
+
+    <div id="gameBoard" class="board"></div>
+
+    <script src="minesweeper.js"></script>
 </body>
 </html>
